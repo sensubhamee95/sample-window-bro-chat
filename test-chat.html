@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CALMAPI - Test Chat Window</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .chat-bubble-user { border-radius: 20px 20px 4px 20px; }
+        .chat-bubble-bot { border-radius: 20px 20px 20px 4px; }
+        .message-container {
+            scrollbar-width: thin;
+            scrollbar-color: #10b981 #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-5xl mx-auto h-screen flex flex-col">
+        <!-- HEADER -->
+        <div class="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl">C</div>
+                <div>
+                    <h1 class="text-2xl font-semibold text-gray-900">CALMAPI Test Chat</h1>
+                    <p class="text-emerald-600 text-sm font-medium">Public Streaming API Tester</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-1 text-sm">
+                    <span class="text-gray-500 font-medium">Base URL:</span>
+                    <input id="baseUrl" 
+                           type="text" 
+                           value="http://localhost:3000"
+                           class="bg-transparent outline-none text-gray-700 font-mono w-72">
+                </div>
+
+                <div id="statusBar" class="hidden items-center gap-6 text-xs font-mono">
+                    <div>
+                        <span class="text-gray-400">Customer:</span>
+                        <span id="displayCustomerId" class="text-emerald-700 font-medium"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Session:</span>
+                        <span id="displaySessionId" class="text-emerald-700 font-medium"></span>
+                    </div>
+                </div>
+
+                <button onclick="resetAll()"
+                        class="px-5 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-2xl text-sm font-medium flex items-center gap-2 transition">
+                    Reset All
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- STEP 1: CUSTOMER FORM with API Key -->
+            <div id="customerFormPanel" class="flex-1 flex items-center justify-center bg-white p-10">
+                <div class="max-w-md w-full">
+                    <h2 class="text-3xl font-semibold mb-2">Start New Chat</h2>
+                    <p class="text-gray-500 mb-8">Enter your API Key and customer details</p>
+                    
+                    <form id="customerForm" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">API Key (X-API-Key)</label>
+                            <input id="apiKey" type="text" placeholder="sk_proj_xxxxxxxxxxxxxxxxxxxxxxxx"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500 font-mono text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input id="name" type="text" value="" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input id="email" type="email" value="" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                <input id="phone" type="tel" value="" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-3xl font-semibold text-lg transition">
+                            Create Customer & Start Chat
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- CHAT PANEL -->
+            <div id="chatPanel" class="hidden flex-1 flex flex-col bg-gray-50">
+                <div class="bg-white px-6 py-4 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center font-semibold">👤</div>
+                        <div>
+                            <p class="font-semibold">Live Chat</p>
+                            <p id="chatHeaderSubtitle" class="text-xs text-gray-500">Streaming response active</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button onclick="endCurrentSession()" 
+                                class="px-6 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-3xl text-sm font-medium flex items-center gap-2">
+                            End Session
+                        </button>
+                        
+                        <button onclick="newChat()" 
+                                class="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-3xl text-sm font-medium">
+                            New Chat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div id="messages" class="flex-1 p-6 overflow-y-auto message-container space-y-6"></div>
+
+                <!-- Input -->
+                <div class="bg-white border-t p-6">
+                    <form id="chatForm" class="flex gap-3">
+                        <input id="queryInput" 
+                               type="text"
+                               placeholder="Type your message here..."
+                               class="flex-1 px-6 py-4 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
+                        <button type="submit"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white w-12 h-12 rounded-3xl flex items-center justify-center transition">
+                            →
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let BASE_URL = 'http://localhost:3000';
+        let apiKey = null;
+        let customerId = null;
+        let sessionId = null;
+        let isStreaming = false;
+
+        // Storage
+        function loadFromStorage() {
+            apiKey = sessionStorage.getItem('test_apiKey');
+            customerId = sessionStorage.getItem('test_customerId');
+            sessionId = sessionStorage.getItem('test_sessionId');
+        }
+
+        function saveToStorage() {
+            if (apiKey) sessionStorage.setItem('test_apiKey', apiKey);
+            if (customerId) sessionStorage.setItem('test_customerId', customerId);
+            if (sessionId) sessionStorage.setItem('test_sessionId', sessionId);
+        }
+
+        function clearStorage() {
+            sessionStorage.clear();
+            apiKey = customerId = sessionId = null;
+        }
+
+        function showCustomerForm() {
+            document.getElementById('customerFormPanel').classList.remove('hidden');
+            document.getElementById('chatPanel').classList.add('hidden');
+        }
+
+        function showChatPanel() {
+            document.getElementById('customerFormPanel').classList.add('hidden');
+            document.getElementById('chatPanel').classList.remove('hidden');
+            document.getElementById('statusBar').classList.remove('hidden');
+
+            document.getElementById('displayCustomerId').textContent = customerId?.substring(0, 8) + '...';
+            document.getElementById('displaySessionId').textContent = sessionId ? sessionId.substring(0, 8) + '...' : 'new';
+        }
+
+        function addMessage(role, content, isStreamingToken = false) {
+            const messagesDiv = document.getElementById('messages');
+            let messageDiv;
+
+            if (isStreamingToken && messagesDiv.lastElementChild && messagesDiv.lastElementChild.dataset.role === 'bot') {
+                messageDiv = messagesDiv.lastElementChild;
+                const contentEl = messageDiv.querySelector('.message-content');
+                if (contentEl) contentEl.textContent += content;
+            } else {
+                messageDiv = document.createElement('div');
+                messageDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+                messageDiv.dataset.role = role;
+
+                if (role === 'user') {
+                    messageDiv.innerHTML = `<div class="max-w-[75%] bg-emerald-600 text-white px-6 py-4 chat-bubble-user"><p class="text-sm">${content}</p></div>`;
+                } else {
+                    messageDiv.innerHTML = `<div class="max-w-[75%] bg-white border border-gray-200 px-6 py-4 chat-bubble-bot shadow-sm"><div class="message-content text-sm text-gray-800">${content}</div></div>`;
+                }
+                messagesDiv.appendChild(messageDiv);
+            }
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const messagesDiv = document.getElementById('messages');
+            let typing = document.getElementById('typingIndicator');
+            if (typing) return;
+
+            typing = document.createElement('div');
+            typing.id = 'typingIndicator';
+            typing.className = 'flex justify-start';
+            typing.innerHTML = `
+                <div class="bg-white border border-gray-200 px-6 py-4 rounded-3xl flex items-center gap-2">
+                    <div class="flex gap-1">
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
+                    </div>
+                    <span class="text-xs text-gray-400">AI is thinking...</span>
+                </div>
+            `;
+            messagesDiv.appendChild(typing);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+
+        // Create Customer with API Key
+        async function createCustomer() {
+            const inputApiKey = document.getElementById('apiKey').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!inputApiKey) {
+                alert('Please enter your API Key');
+                return;
+            }
+
+            apiKey = inputApiKey;
+
+            const payload = { name, email, phone };
+
+            try {
+                const res = await fetch(`${BASE_URL}/api/customers/insert-with-authentication`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const json = await res.json();
+
+                if (json.error === false && json.data && json.data._id) {
+                    customerId = json.data._id;
+                    saveToStorage();
+                    showChatPanel();
+                    addMessage('bot', '✅ Customer created successfully! You can now start chatting.', false);
+                } else {
+                    alert('Failed to create customer: ' + (json.message || JSON.stringify(json)));
+                }
+            } catch (err) {
+                alert('Error creating customer: ' + err.message);
+            }
+        }
+
+        // Send Message (Streaming)
+        async function sendMessage() {
+            if (isStreaming || !apiKey) return;
+
+            const input = document.getElementById('queryInput');
+            const query = input.value.trim();
+            if (!query) return;
+
+            addMessage('user', query);
+            input.value = '';
+
+            showTypingIndicator();
+            isStreaming = true;
+
+            const payload = {
+                query,
+                customerId,
+                ...(sessionId && { sessionId })
+            };
+
+            try {
+                const res = await fetch(`${BASE_URL}/api/chat-routes/stream-response`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) throw new Error('Stream request failed');
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+
+                                if (data.type === 'session') {
+                                    sessionId = data.sessionId;
+                                    saveToStorage();
+                                    document.getElementById('displaySessionId').textContent = sessionId.substring(0, 8) + '...';
+                                }
+
+                                if (data.type === 'token') {
+                                    removeTypingIndicator();
+                                    addMessage('bot', data.token, true);
+                                }
+
+                                if (data.type === 'complete') {
+                                    isStreaming = false;
+                                    removeTypingIndicator();
+                                }
+
+                                if (data.type === 'error') {
+                                    isStreaming = false;
+                                    addMessage('bot', '❌ ' + (data.message || 'Unknown error'), false);
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                addMessage('bot', '❌ Failed to get response from AI', false);
+            } finally {
+                isStreaming = false;
+                removeTypingIndicator();
+            }
+        }
+
+        // End Current Session
+        async function endCurrentSession() {
+            if (!customerId || !sessionId || !apiKey) {
+                alert('No active session to end');
+                return;
+            }
+
+            if (!confirm('End current session?')) return;
+
+            try {
+                const res = await fetch(`${BASE_URL}/api/customers/${customerId}/session-completed/${sessionId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    }
+                });
+
+                const json = await res.json();
+
+                if (json.success || json.status === true) {
+                    addMessage('bot', '✅ Session completed successfully.', false);
+                    sessionId = null;
+                    saveToStorage();
+                    document.getElementById('displaySessionId').textContent = 'new';
+                } else {
+                    alert('Failed to end session');
+                }
+            } catch (err) {
+                alert('Error ending session: ' + err.message);
+            }
+        }
+
+        function newChat() {
+            if (sessionId) {
+                endCurrentSession().then(() => {
+                    sessionId = null;
+                    saveToStorage();
+                    document.getElementById('messages').innerHTML = '';
+                    addMessage('bot', '🆕 New chat started.', false);
+                });
+            } else {
+                document.getElementById('messages').innerHTML = '';
+                addMessage('bot', '🆕 New chat started.', false);
+            }
+        }
+
+        function resetAll() {
+            if (confirm('Clear all data and start fresh?')) {
+                clearStorage();
+                document.getElementById('messages').innerHTML = '';
+                showCustomerForm();
+            }
+        }
+
+        // Initialize
+        window.onload = function () {
+            loadFromStorage();
+
+            const baseInput = document.getElementById('baseUrl');
+            baseInput.addEventListener('change', () => BASE_URL = baseInput.value.trim());
+
+            document.getElementById('customerForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                createCustomer();
+            });
+
+            document.getElementById('chatForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                sendMessage();
+            });
+
+            if (apiKey && customerId) {
+                showChatPanel();
+                addMessage('bot', '👋 Welcome back! Previous session loaded.', false);
+            } else {
+                showCustomerForm();
+            }
+        };
+    </script>
+</body>
+</html>
