@@ -14,26 +14,130 @@
             scrollbar-width: thin;
             scrollbar-color: #10b981 #f3f4f6;
         }
+
+        /* File protocol warning overlay */
+        #fileProtocolWarning {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .warning-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 560px;
+            width: 90%;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+        }
+        .warning-box h2 { font-size: 1.4rem; font-weight: 700; color: #dc2626; margin-bottom: 8px; }
+        .warning-box p { color: #374151; margin-bottom: 16px; font-size: 0.95rem; line-height: 1.6; }
+        .cmd-block {
+            background: #1f2937;
+            color: #10b981;
+            font-family: monospace;
+            font-size: 0.88rem;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .copy-btn {
+            background: #374151;
+            color: #d1fae5;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .copy-btn:hover { background: #4b5563; }
+        .step-label { font-size: 0.78rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 20px; margin-bottom: 4px; }
+        .dismiss-btn {
+            margin-top: 24px;
+            width: 100%;
+            padding: 12px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .dismiss-btn:hover { background: #b91c1c; }
+        .warning-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .divider { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
+
+    <!-- FILE:// PROTOCOL WARNING OVERLAY -->
+    <div id="fileProtocolWarning" style="display:none;">
+        <div class="warning-box">
+            <div class="warning-icon">🚫</div>
+            <h2>Cannot run from file://</h2>
+            <p>
+                You opened this file directly in the browser (<code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:0.85rem;">file://</code> protocol). 
+                Browsers <strong>block all fetch/API calls</strong> from <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:0.85rem;">file://</code> due to CORS security rules — 
+                no backend change can fix this.
+            </p>
+            <p style="margin-bottom:0;">You need to serve this HTML from a <strong>local server</strong>. Pick any option below:</p>
+
+            <hr class="divider">
+
+            <div class="step-label">Option 1 — Node.js (npx)</div>
+            <div class="cmd-block">
+                <span>npx serve .</span>
+                <button class="copy-btn" onclick="copyCmd('npx serve .')">Copy</button>
+            </div>
+
+            <div class="step-label">Option 2 — Python</div>
+            <div class="cmd-block">
+                <span>python -m http.server 8080</span>
+                <button class="copy-btn" onclick="copyCmd('python -m http.server 8080')">Copy</button>
+            </div>
+
+            <div class="step-label">Option 3 — VS Code</div>
+            <p style="font-size:0.88rem; color:#374151; margin:0;">
+                Install the <strong>Live Server</strong> extension → right-click this HTML file → <em>"Open with Live Server"</em>
+            </p>
+
+            <hr class="divider">
+            <p style="font-size:0.85rem; color:#6b7280; margin:0;">
+                After running the command above, open <strong>http://localhost:3000</strong> (or the port shown) in your browser.
+            </p>
+
+            <button class="dismiss-btn" onclick="dismissWarning()">I understand — dismiss and try anyway</button>
+        </div>
+    </div>
+
     <div class="max-w-5xl mx-auto h-screen flex flex-col">
         <!-- HEADER -->
         <div class="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl">C</div>
                 <div>
-                    <h1 class="text-2xl font-semibold text-gray-900">CALMAPI Test Chat</h1>
+                    <h1 class="text-2xl font-semibold text-gray-900">BRO CHAT TEST</h1>
                     <p class="text-emerald-600 text-sm font-medium">Public Streaming API Tester</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-1 text-sm">
-                    <span class="text-gray-500 font-medium">Base URL:</span>
+                    <span class="text-gray-500 font-medium">URL:</span>
                     <input id="baseUrl" 
                            type="text" 
-                           value="http://localhost:3000"
+                           value="http://37.27.180.36:5005/api/chat-routes/stream-response"
                            class="bg-transparent outline-none text-gray-700 font-mono w-72">
                 </div>
 
@@ -140,7 +244,34 @@
     </div>
 
     <script>
-        let BASE_URL = 'http://localhost:3000';
+        // ─── FILE:// DETECTION ───────────────────────────────────────────────
+        function checkProtocol() {
+            if (window.location.protocol === 'file:') {
+                document.getElementById('fileProtocolWarning').style.display = 'flex';
+            }
+        }
+
+        function dismissWarning() {
+            document.getElementById('fileProtocolWarning').style.display = 'none';
+        }
+
+        function copyCmd(cmd) {
+            navigator.clipboard.writeText(cmd).then(() => {
+                const btns = document.querySelectorAll('.copy-btn');
+                btns.forEach(btn => {
+                    if (btn.getAttribute('onclick').includes(cmd)) {
+                        const orig = btn.textContent;
+                        btn.textContent = 'Copied!';
+                        btn.style.background = '#065f46';
+                        setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1500);
+                    }
+                });
+            });
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
+        let BASE_URL = 'http://37.27.180.36:5005';
+        // let BASE_URL = 'http://127.0.0.1:3000';
         let apiKey = null;
         let customerId = null;
         let sessionId = null;
@@ -408,6 +539,8 @@
 
         // Initialize
         window.onload = function () {
+            checkProtocol(); // ← check if running from file://
+
             loadFromStorage();
 
             const baseInput = document.getElementById('baseUrl');
