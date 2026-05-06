@@ -269,8 +269,8 @@
             });
         }
         // ─────────────────────────────────────────────────────────────────────
-
-        let BASE_URL = 'http://37.27.180.36:5005';
+        let BASE_URL = '';
+        // let BASE_URL = 'http://37.27.180.36:5005';
         // let BASE_URL = 'http://127.0.0.1:3000';
         let apiKey = null;
         let customerId = null;
@@ -376,7 +376,7 @@
             const payload = { name, email, phone };
 
             try {
-                const res = await fetch(`${BASE_URL}/api/customers/insert-with-authentication`, {
+                const res = await fetch(`/api/customers/insert-with-authentication`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -421,7 +421,7 @@
             };
 
             try {
-                const res = await fetch(`${BASE_URL}/api/chat-routes/stream-response`, {
+                const res = await fetch(`/api/chat-routes/stream-response`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -492,7 +492,7 @@
             if (!confirm('End current session?')) return;
 
             try {
-                const res = await fetch(`${BASE_URL}/api/customers/${customerId}/session-completed/${sessionId}`, {
+                const res = await fetch(`/api/customers/${customerId}/session-completed/${sessionId}`, {
                     method: 'PUT',
                     headers: { 
                         'Content-Type': 'application/json',
