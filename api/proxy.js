@@ -1,26 +1,55 @@
-export const config = { runtime: 'edge' };
-
 const TARGET = 'http://37.27.180.36:5005';
 
-export default async function handler(req) {
-    const url = new URL(req.url);
+module.exports = async function handler(req, res) {
+    // req.query.path is an array like ['api', 'customers', 'insert-with-authentication']
+    const pathSegments = req.query.path || [];
+    const targetPath   = '/' + pathSegments.join('/');
+    const targetUrl    = `${TARGET}${targetPath}`;
 
-    // Strip /api/proxy prefix → forward the rest to your backend
-    const targetPath = url.pathname.replace('/api/proxy', '');
-    const targetUrl  = `${TARGET}${targetPath}${url.search}`;
+    console.log(`[proxy] ${req.method} ${targetUrl}`);
 
-    const headers = new Headers(req.headers);
-    headers.delete('host');
+    try {
+        const headers = { ...req.headers };
+        delete headers['host'];
+        delete headers['content-length'];
 
-    const response = await fetch(targetUrl, {
-        method:  req.method,
-        headers: headers,
-        body:    ['GET','HEAD'].includes(req.method) ? null : req.body,
-        duplex:  'half',
-    });
+        let body = null;
+        if (!['GET', 'HEAD'].includes(req.method)) {
+            body = JSON.stringify(req.body);
+            headers['content-type'] = 'application/json';
+        }
 
-    return new Response(response.body, {
-        status:  response.status,
-        headers: response.headers,
-    });
-}
+        const fetchRes = await fetch(targetUrl, {
+            method:  req.method,
+            headers: headers,
+            body:    body,
+        });
+
+        // Copy status
+        res.status(fetchRes.status);
+
+        // Copy headers — skip ones that break streaming
+        fetchRes.headers.forEach((value, key) => {
+            if (!['transfer-encoding', 'connection', 'content-encoding'].includes(key)) {
+                res.setHeader(key, value);
+            }
+        });
+
+        // Flush headers immediately (critical for SSE)
+        res.flushHeaders();
+
+        // Stream body back chunk by chunk
+        const reader = fetchRes.body.getReader();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(Buffer.from(value));
+        }
+
+        res.end();
+
+    } catch (err) {
+        console.error('[proxy] error:', err.message);
+        res.status(500).json({ error: 'Proxy error: ' + err.message });
+    }
+};
