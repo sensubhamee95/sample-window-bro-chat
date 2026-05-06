@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,121 +11,180 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
         .chat-bubble-user { border-radius: 20px 20px 4px 20px; }
-        .chat-bubble-bot { border-radius: 20px 20px 20px 4px; }
+        .chat-bubble-bot  { border-radius: 20px 20px 20px 4px; }
         .message-container {
             scrollbar-width: thin;
             scrollbar-color: #10b981 #f3f4f6;
         }
 
-        /* File protocol warning overlay */
-        #fileProtocolWarning {
-            position: fixed;
-            inset: 0;
+        /* ── Overlays ─────────────────────────────────────────────── */
+        .overlay {
+            position: fixed; inset: 0;
             background: rgba(0,0,0,0.85);
             z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             backdrop-filter: blur(4px);
         }
         .warning-box {
-            background: #fff;
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 560px;
-            width: 90%;
+            background: #fff; border-radius: 16px; padding: 40px;
+            max-width: 580px; width: 90%;
             box-shadow: 0 25px 60px rgba(0,0,0,0.3);
         }
         .warning-box h2 { font-size: 1.4rem; font-weight: 700; color: #dc2626; margin-bottom: 8px; }
-        .warning-box p { color: #374151; margin-bottom: 16px; font-size: 0.95rem; line-height: 1.6; }
+        .warning-box p  { color: #374151; margin-bottom: 16px; font-size: 0.95rem; line-height: 1.6; }
+
         .cmd-block {
-            background: #1f2937;
-            color: #10b981;
-            font-family: monospace;
-            font-size: 0.88rem;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 8px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
+            background: #1f2937; color: #10b981;
+            font-family: monospace; font-size: 0.88rem;
+            border-radius: 8px; padding: 12px 16px;
+            margin: 8px 0; display: flex;
+            align-items: center; justify-content: space-between; gap: 10px;
         }
         .copy-btn {
-            background: #374151;
-            color: #d1fae5;
-            border: none;
-            border-radius: 6px;
-            padding: 4px 10px;
-            font-size: 0.78rem;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
+            background: #374151; color: #d1fae5;
+            border: none; border-radius: 6px; padding: 4px 10px;
+            font-size: 0.78rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;
         }
         .copy-btn:hover { background: #4b5563; }
-        .step-label { font-size: 0.78rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 20px; margin-bottom: 4px; }
+        .step-label {
+            font-size: 0.78rem; font-weight: 600; color: #6b7280;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            margin-top: 20px; margin-bottom: 4px;
+        }
         .dismiss-btn {
-            margin-top: 24px;
-            width: 100%;
-            padding: 12px;
-            background: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.95rem;
+            margin-top: 24px; width: 100%; padding: 12px;
+            background: #dc2626; color: white; border: none;
+            border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem;
         }
         .dismiss-btn:hover { background: #b91c1c; }
         .warning-icon { font-size: 2.5rem; margin-bottom: 12px; }
         .divider { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
+
+        /* ── Mixed-content banner ─────────────────────────────────── */
+        #mixedContentBanner {
+            display: none;
+            background: #fef2f2; border-bottom: 2px solid #fca5a5;
+            padding: 10px 24px;
+            font-size: 0.85rem; color: #991b1b;
+            gap: 8px; align-items: flex-start;
+        }
+        #mixedContentBanner.show { display: flex; }
+        #mixedContentBanner strong { font-weight: 700; }
+        #mixedContentBanner code {
+            background: #fee2e2; padding: 1px 5px; border-radius: 4px;
+            font-family: monospace; font-size: 0.82rem;
+        }
+
+        /* ── URL input highlight ──────────────────────────────────── */
+        .url-input-wrap { position: relative; display: flex; align-items: center; }
+        #protocolBadge {
+            position: absolute; left: 10px;
+            font-size: 0.7rem; font-weight: 700;
+            padding: 2px 6px; border-radius: 4px; pointer-events: none;
+        }
+        #protocolBadge.safe  { background: #d1fae5; color: #065f46; }
+        #protocolBadge.warn  { background: #fee2e2; color: #991b1b; }
+        #baseUrlInput {
+            padding-left: 54px !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
-    <!-- FILE:// PROTOCOL WARNING OVERLAY -->
-    <div id="fileProtocolWarning" style="display:none;">
+    <!-- ── FILE:// WARNING OVERLAY ─────────────────────────────────────── -->
+    <div id="fileProtocolWarning" class="overlay" style="display:none;">
         <div class="warning-box">
             <div class="warning-icon">🚫</div>
             <h2>Cannot run from file://</h2>
             <p>
-                You opened this file directly in the browser (<code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:0.85rem;">file://</code> protocol). 
-                Browsers <strong>block all fetch/API calls</strong> from <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:0.85rem;">file://</code> due to CORS security rules — 
-                no backend change can fix this.
+                You opened this file directly (<code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:0.85rem;">file://</code> protocol).
+                Browsers block all fetch/API calls from <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:0.85rem;">file://</code>
+                due to CORS security rules — no backend change can fix this.
             </p>
-            <p style="margin-bottom:0;">You need to serve this HTML from a <strong>local server</strong>. Pick any option below:</p>
-
+            <p style="margin-bottom:0;">Serve this HTML from a <strong>local server</strong>:</p>
             <hr class="divider">
-
-            <div class="step-label">Option 1 — Node.js (npx)</div>
-            <div class="cmd-block">
-                <span>npx serve .</span>
-                <button class="copy-btn" onclick="copyCmd('npx serve .')">Copy</button>
-            </div>
-
+            <div class="step-label">Option 1 — Node.js</div>
+            <div class="cmd-block"><span>npx serve .</span><button class="copy-btn" onclick="copyCmd('npx serve .')">Copy</button></div>
             <div class="step-label">Option 2 — Python</div>
-            <div class="cmd-block">
-                <span>python -m http.server 8080</span>
-                <button class="copy-btn" onclick="copyCmd('python -m http.server 8080')">Copy</button>
-            </div>
-
+            <div class="cmd-block"><span>python -m http.server 8080</span><button class="copy-btn" onclick="copyCmd('python -m http.server 8080')">Copy</button></div>
             <div class="step-label">Option 3 — VS Code</div>
-            <p style="font-size:0.88rem; color:#374151; margin:0;">
-                Install the <strong>Live Server</strong> extension → right-click this HTML file → <em>"Open with Live Server"</em>
+            <p style="font-size:0.88rem;color:#374151;margin:0;">
+                Install <strong>Live Server</strong> → right-click this file → <em>"Open with Live Server"</em>
             </p>
-
             <hr class="divider">
-            <p style="font-size:0.85rem; color:#6b7280; margin:0;">
-                After running the command above, open <strong>http://localhost:3000</strong> (or the port shown) in your browser.
+            <p style="font-size:0.85rem;color:#6b7280;margin:0;">
+                After running, open <strong>http://localhost:3000</strong> (or shown port).
             </p>
-
-            <button class="dismiss-btn" onclick="dismissWarning()">I understand — dismiss and try anyway</button>
+            <button class="dismiss-btn" onclick="dismissOverlay('fileProtocolWarning')">I understand — dismiss and try anyway</button>
         </div>
     </div>
 
+    <!-- ── MIXED CONTENT WARNING OVERLAY ──────────────────────────────── -->
+    <div id="mixedContentOverlay" class="overlay" style="display:none;">
+        <div class="warning-box">
+            <div class="warning-icon">🔒</div>
+            <h2>Mixed Content Blocked</h2>
+            <p>
+                This page is served over <strong>HTTPS</strong>, but the API URL you entered uses plain
+                <code>HTTP</code>. Browsers <strong>silently block</strong> these requests — that's why
+                you see <em>0.0 kB / 0 ms</em> in the Network tab.
+            </p>
+            <p>You have two options to fix this:</p>
+            <hr class="divider">
+
+            <div class="step-label">✅ Option A — Change API URL to HTTPS</div>
+            <p style="font-size:0.88rem;color:#374151;">
+                Put an Nginx reverse proxy with SSL in front of your backend and update the URL above to
+                <code>https://</code>. Add this to your Nginx config on the API server:
+            </p>
+            <div class="cmd-block" style="flex-direction:column;align-items:flex-start;gap:4px;">
+                <span>proxy_pass http://127.0.0.1:5005;</span>
+                <span>proxy_buffering off;</span>
+                <span>proxy_read_timeout 300s;</span>
+            </div>
+
+            <div class="step-label">✅ Option B — Proxy via your own server (no SSL on API needed)</div>
+            <p style="font-size:0.88rem;color:#374151;">
+                In the Nginx config of the server hosting <em>this HTML</em>, add:
+            </p>
+            <div class="cmd-block" style="flex-direction:column;align-items:flex-start;gap:4px;">
+                <span>location /api/ {</span>
+                <span>&nbsp;&nbsp;proxy_pass http://37.27.180.36:5005/api/;</span>
+                <span>&nbsp;&nbsp;proxy_buffering off;</span>
+                <span>&nbsp;&nbsp;proxy_read_timeout 300s;</span>
+                <span>}</span>
+            </div>
+            <p style="font-size:0.88rem;color:#374151;margin-top:8px;">
+                Then set the URL field above to just <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">http://localhost</code> or leave blank (empty = same origin).
+            </p>
+
+            <hr class="divider">
+            <p style="font-size:0.84rem;color:#6b7280;margin:0;">
+                ⚠️ Changing your browser's security settings is NOT recommended and won't work in production.
+            </p>
+            <button class="dismiss-btn" onclick="dismissOverlay('mixedContentOverlay')">I understand — dismiss warning</button>
+        </div>
+    </div>
+
+    <!-- ── MIXED CONTENT INLINE BANNER ────────────────────────────────── -->
+    <div id="mixedContentBanner">
+        <span>⚠️</span>
+        <span>
+            <strong>Mixed Content Warning:</strong>
+            This page runs on <code>HTTPS</code> but the API URL uses <code>HTTP</code>.
+            Browsers will block all requests — you'll see <code>0.0 kB / 0 ms</code> in Network tab.
+            Change the API URL to <code>https://</code> or proxy through this server.
+            <button onclick="document.getElementById('mixedContentOverlay').style.display='flex'"
+                    style="margin-left:8px;text-decoration:underline;background:none;border:none;cursor:pointer;color:#991b1b;font-size:0.85rem;font-weight:600;">
+                How to fix →
+            </button>
+        </span>
+    </div>
+
     <div class="max-w-5xl mx-auto h-screen flex flex-col">
-        <!-- HEADER -->
-        <div class="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm">
+
+        <!-- ── HEADER ──────────────────────────────────────────────────── -->
+        <div class="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl">C</div>
                 <div>
@@ -133,12 +194,14 @@
             </div>
 
             <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-1 text-sm">
-                    <span class="text-gray-500 font-medium">URL:</span>
-                    <input id="baseUrl" 
-                           type="text" 
-                           value="http://37.27.180.36:5005/api/chat-routes/stream-response"
-                           class="bg-transparent outline-none text-gray-700 font-mono w-72">
+                <!-- URL input with protocol badge -->
+                <div class="url-input-wrap bg-gray-100 rounded-2xl px-2 py-1">
+                    <span id="protocolBadge" class="safe">HTTPS</span>
+                    <input id="baseUrlInput"
+                           type="text"
+                           value="http://37.27.180.36:5005"
+                           class="bg-transparent outline-none text-gray-700 font-mono text-sm w-72 py-1 pr-2"
+                           placeholder="http:// or https://">
                 </div>
 
                 <div id="statusBar" class="hidden items-center gap-6 text-xs font-mono">
@@ -160,48 +223,48 @@
         </div>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- STEP 1: CUSTOMER FORM with API Key -->
+
+            <!-- ── STEP 1: CUSTOMER FORM ──────────────────────────────── -->
             <div id="customerFormPanel" class="flex-1 flex items-center justify-center bg-white p-10">
                 <div class="max-w-md w-full">
                     <h2 class="text-3xl font-semibold mb-2">Start New Chat</h2>
                     <p class="text-gray-500 mb-8">Enter your API Key and customer details</p>
-                    
-                    <form id="customerForm" class="space-y-6">
+
+                    <div class="space-y-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">API Key (X-API-Key)</label>
-                            <input id="apiKey" type="text" placeholder="sk_proj_xxxxxxxxxxxxxxxxxxxxxxxx"
+                            <input id="apiKeyInput" type="text" placeholder="sk_proj_xxxxxxxxxxxxxxxxxxxxxxxx"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500 font-mono text-sm">
                         </div>
-
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                            <input id="name" type="text" value="" 
+                            <input id="nameInput" type="text"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input id="email" type="email" value="" 
+                                <input id="emailInput" type="email"
                                        class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                <input id="phone" type="tel" value="" 
+                                <input id="phoneInput" type="tel"
                                        class="w-full px-4 py-3 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
                             </div>
                         </div>
 
-                        <button type="submit"
+                        <button onclick="createCustomer()"
                                 class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-3xl font-semibold text-lg transition">
-                            Create Customer & Start Chat
+                            Create Customer &amp; Start Chat
                         </button>
-                    </form>
+                    </div>
                 </div>
             </div>
 
-            <!-- CHAT PANEL -->
+            <!-- ── CHAT PANEL ─────────────────────────────────────────── -->
             <div id="chatPanel" class="hidden flex-1 flex flex-col bg-gray-50">
-                <div class="bg-white px-6 py-4 border-b flex items-center justify-between">
+                <div class="bg-white px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center font-semibold">👤</div>
                         <div>
@@ -209,57 +272,96 @@
                             <p id="chatHeaderSubtitle" class="text-xs text-gray-500">Streaming response active</p>
                         </div>
                     </div>
-
                     <div class="flex items-center gap-3">
-                        <button onclick="endCurrentSession()" 
-                                class="px-6 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-3xl text-sm font-medium flex items-center gap-2">
+                        <button onclick="endCurrentSession()"
+                                class="px-6 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-3xl text-sm font-medium">
                             End Session
                         </button>
-                        
-                        <button onclick="newChat()" 
+                        <button onclick="newChat()"
                                 class="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-3xl text-sm font-medium">
                             New Chat
                         </button>
                     </div>
                 </div>
 
-                <!-- Messages -->
                 <div id="messages" class="flex-1 p-6 overflow-y-auto message-container space-y-6"></div>
 
-                <!-- Input -->
-                <div class="bg-white border-t p-6">
-                    <form id="chatForm" class="flex gap-3">
-                        <input id="queryInput" 
+                <div class="bg-white border-t p-6 flex-shrink-0">
+                    <div class="flex gap-3">
+                        <input id="queryInput"
                                type="text"
                                placeholder="Type your message here..."
-                               class="flex-1 px-6 py-4 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500">
-                        <button type="submit"
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white w-12 h-12 rounded-3xl flex items-center justify-center transition">
+                               class="flex-1 px-6 py-4 border border-gray-300 rounded-3xl focus:outline-none focus:border-emerald-500"
+                               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}">
+                        <button onclick="sendMessage()"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white w-12 h-12 rounded-3xl flex items-center justify-center transition text-xl">
                             →
                         </button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ─── FILE:// DETECTION ───────────────────────────────────────────────
+        // ── State ──────────────────────────────────────────────────────────
+        let BASE_URL  = 'http://37.27.180.36:5005';
+        let apiKey    = null;
+        let customerId = null;
+        let sessionId  = null;
+        let isStreaming = false;
+
+        // ── Protocol / mixed-content helpers ──────────────────────────────
+        function getPageProtocol() { return window.location.protocol; }  // 'https:' or 'http:'
+
+        function isMixedContent(apiUrl) {
+            // Mixed content = page is HTTPS but API URL is HTTP (absolute)
+            return (
+                getPageProtocol() === 'https:' &&
+                apiUrl.startsWith('http://')
+            );
+        }
+
+        function updateProtocolBadge(apiUrl) {
+            const badge = document.getElementById('protocolBadge');
+            const banner = document.getElementById('mixedContentBanner');
+
+            if (apiUrl.startsWith('https://') || apiUrl === '' || apiUrl.startsWith('/')) {
+                badge.textContent = apiUrl.startsWith('https://') ? 'HTTPS' : 'SAME';
+                badge.className = 'safe';
+            } else {
+                badge.textContent = 'HTTP';
+                badge.className = 'warn';
+            }
+
+            if (isMixedContent(apiUrl)) {
+                banner.classList.add('show');
+            } else {
+                banner.classList.remove('show');
+            }
+        }
+
+        function checkMixedContent() {
+            if (isMixedContent(BASE_URL)) {
+                document.getElementById('mixedContentOverlay').style.display = 'flex';
+            }
+        }
+
+        // ── File:// detection ─────────────────────────────────────────────
         function checkProtocol() {
             if (window.location.protocol === 'file:') {
                 document.getElementById('fileProtocolWarning').style.display = 'flex';
             }
         }
 
-        function dismissWarning() {
-            document.getElementById('fileProtocolWarning').style.display = 'none';
+        function dismissOverlay(id) {
+            document.getElementById(id).style.display = 'none';
         }
 
         function copyCmd(cmd) {
             navigator.clipboard.writeText(cmd).then(() => {
-                const btns = document.querySelectorAll('.copy-btn');
-                btns.forEach(btn => {
-                    if (btn.getAttribute('onclick').includes(cmd)) {
+                document.querySelectorAll('.copy-btn').forEach(btn => {
+                    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(cmd)) {
                         const orig = btn.textContent;
                         btn.textContent = 'Copied!';
                         btn.style.background = '#065f46';
@@ -268,26 +370,19 @@
                 });
             });
         }
-        // ─────────────────────────────────────────────────────────────────────
 
-        let BASE_URL = 'http://37.27.180.36:5005';
-        // let BASE_URL = 'http://127.0.0.1:3000';
-        let apiKey = null;
-        let customerId = null;
-        let sessionId = null;
-        let isStreaming = false;
-
-        // Storage
+        // ── Storage ───────────────────────────────────────────────────────
         function loadFromStorage() {
-            apiKey = sessionStorage.getItem('test_apiKey');
+            apiKey     = sessionStorage.getItem('test_apiKey');
             customerId = sessionStorage.getItem('test_customerId');
-            sessionId = sessionStorage.getItem('test_sessionId');
+            sessionId  = sessionStorage.getItem('test_sessionId');
         }
 
         function saveToStorage() {
-            if (apiKey) sessionStorage.setItem('test_apiKey', apiKey);
+            if (apiKey)     sessionStorage.setItem('test_apiKey', apiKey);
             if (customerId) sessionStorage.setItem('test_customerId', customerId);
-            if (sessionId) sessionStorage.setItem('test_sessionId', sessionId);
+            if (sessionId)  sessionStorage.setItem('test_sessionId', sessionId);
+            else            sessionStorage.removeItem('test_sessionId');
         }
 
         function clearStorage() {
@@ -295,112 +390,129 @@
             apiKey = customerId = sessionId = null;
         }
 
+        // ── Panel switches ────────────────────────────────────────────────
         function showCustomerForm() {
             document.getElementById('customerFormPanel').classList.remove('hidden');
             document.getElementById('chatPanel').classList.add('hidden');
+            document.getElementById('statusBar').classList.add('hidden');
         }
 
         function showChatPanel() {
             document.getElementById('customerFormPanel').classList.add('hidden');
             document.getElementById('chatPanel').classList.remove('hidden');
             document.getElementById('statusBar').classList.remove('hidden');
-
             document.getElementById('displayCustomerId').textContent = customerId?.substring(0, 8) + '...';
             document.getElementById('displaySessionId').textContent = sessionId ? sessionId.substring(0, 8) + '...' : 'new';
         }
 
+        // ── Messages ──────────────────────────────────────────────────────
         function addMessage(role, content, isStreamingToken = false) {
             const messagesDiv = document.getElementById('messages');
-            let messageDiv;
 
-            if (isStreamingToken && messagesDiv.lastElementChild && messagesDiv.lastElementChild.dataset.role === 'bot') {
-                messageDiv = messagesDiv.lastElementChild;
-                const contentEl = messageDiv.querySelector('.message-content');
+            if (isStreamingToken && messagesDiv.lastElementChild?.dataset.role === 'bot') {
+                const contentEl = messagesDiv.lastElementChild.querySelector('.message-content');
                 if (contentEl) contentEl.textContent += content;
-            } else {
-                messageDiv = document.createElement('div');
-                messageDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
-                messageDiv.dataset.role = role;
-
-                if (role === 'user') {
-                    messageDiv.innerHTML = `<div class="max-w-[75%] bg-emerald-600 text-white px-6 py-4 chat-bubble-user"><p class="text-sm">${content}</p></div>`;
-                } else {
-                    messageDiv.innerHTML = `<div class="max-w-[75%] bg-white border border-gray-200 px-6 py-4 chat-bubble-bot shadow-sm"><div class="message-content text-sm text-gray-800">${content}</div></div>`;
-                }
-                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                return;
             }
+
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            div.dataset.role = role;
+
+            if (role === 'user') {
+                div.innerHTML = `<div class="max-w-[75%] bg-emerald-600 text-white px-6 py-4 chat-bubble-user"><p class="text-sm">${escapeHtml(content)}</p></div>`;
+            } else {
+                div.innerHTML = `<div class="max-w-[75%] bg-white border border-gray-200 px-6 py-4 chat-bubble-bot shadow-sm"><div class="message-content text-sm text-gray-800">${content}</div></div>`;
+            }
+            messagesDiv.appendChild(div);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        function showTypingIndicator() {
-            const messagesDiv = document.getElementById('messages');
-            let typing = document.getElementById('typingIndicator');
-            if (typing) return;
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
 
-            typing = document.createElement('div');
-            typing.id = 'typingIndicator';
-            typing.className = 'flex justify-start';
-            typing.innerHTML = `
+        function showTypingIndicator() {
+            if (document.getElementById('typingIndicator')) return;
+            const messagesDiv = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.id = 'typingIndicator';
+            div.className = 'flex justify-start';
+            div.innerHTML = `
                 <div class="bg-white border border-gray-200 px-6 py-4 rounded-3xl flex items-center gap-2">
                     <div class="flex gap-1">
                         <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
-                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:.15s"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:.3s"></div>
                     </div>
                     <span class="text-xs text-gray-400">AI is thinking...</span>
-                </div>
-            `;
-            messagesDiv.appendChild(typing);
+                </div>`;
+            messagesDiv.appendChild(div);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
         function removeTypingIndicator() {
-            const typing = document.getElementById('typingIndicator');
-            if (typing) typing.remove();
+            document.getElementById('typingIndicator')?.remove();
         }
 
-        // Create Customer with API Key
-        async function createCustomer() {
-            const inputApiKey = document.getElementById('apiKey').value.trim();
-            const name = document.getElementById('name').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const phone = document.getElementById('phone').value.trim();
+        // ── API helpers ───────────────────────────────────────────────────
+        function apiHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey
+            };
+        }
 
-            if (!inputApiKey) {
-                alert('Please enter your API Key');
-                return;
+        // ── Create Customer ───────────────────────────────────────────────
+        async function createCustomer() {
+            const inputApiKey = document.getElementById('apiKeyInput').value.trim();
+            const name  = document.getElementById('nameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const phone = document.getElementById('phoneInput').value.trim();
+
+            if (!inputApiKey) { alert('Please enter your API Key'); return; }
+
+            // Warn but don't block if mixed content
+            if (isMixedContent(BASE_URL)) {
+                const proceed = confirm(
+                    '⚠️ Mixed Content Warning\n\n' +
+                    'This page is on HTTPS but the API URL is HTTP.\n' +
+                    'The browser will likely block this request (0.0 kB / 0 ms).\n\n' +
+                    'Change the API URL to HTTPS or proxy it.\n\n' +
+                    'Try anyway?'
+                );
+                if (!proceed) return;
             }
 
             apiKey = inputApiKey;
 
-            const payload = { name, email, phone };
-
             try {
                 const res = await fetch(`${BASE_URL}/api/customers/insert-with-authentication`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
-                    },
-                    body: JSON.stringify(payload)
+                    headers: apiHeaders(),
+                    body: JSON.stringify({ name, email, phone })
                 });
 
                 const json = await res.json();
 
-                if (json.error === false && json.data && json.data._id) {
+                if (json.error === false && json.data?._id) {
                     customerId = json.data._id;
                     saveToStorage();
                     showChatPanel();
-                    addMessage('bot', '✅ Customer created successfully! You can now start chatting.', false);
+                    addMessage('bot', '✅ Customer created successfully! You can now start chatting.');
                 } else {
                     alert('Failed to create customer: ' + (json.message || JSON.stringify(json)));
                 }
             } catch (err) {
-                alert('Error creating customer: ' + err.message);
+                const hint = isMixedContent(BASE_URL)
+                    ? '\n\n🔒 Mixed content likely blocked this request. See the warning banner.'
+                    : '';
+                alert('Error creating customer: ' + err.message + hint);
             }
         }
 
-        // Send Message (Streaming)
+        // ── Send Message (Streaming) ───────────────────────────────────────
         async function sendMessage() {
             if (isStreaming || !apiKey) return;
 
@@ -410,7 +522,6 @@
 
             addMessage('user', query);
             input.value = '';
-
             showTypingIndicator();
             isStreaming = true;
 
@@ -423,16 +534,13 @@
             try {
                 const res = await fetch(`${BASE_URL}/api/chat-routes/stream-response`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
-                    },
+                    headers: apiHeaders(),
                     body: JSON.stringify(payload)
                 });
 
-                if (!res.ok) throw new Error('Stream request failed');
+                if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-                const reader = res.body.getReader();
+                const reader  = res.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
 
@@ -442,123 +550,119 @@
 
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n');
-                    buffer = lines.pop();
+                    buffer = lines.pop(); // keep incomplete line
 
                     for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6));
+                        if (!line.startsWith('data: ')) continue;
+                        try {
+                            const data = JSON.parse(line.slice(6));
 
-                                if (data.type === 'session') {
-                                    sessionId = data.sessionId;
-                                    saveToStorage();
-                                    document.getElementById('displaySessionId').textContent = sessionId.substring(0, 8) + '...';
-                                }
+                            if (data.type === 'session') {
+                                sessionId = data.sessionId;
+                                saveToStorage();
+                                document.getElementById('displaySessionId').textContent = sessionId.substring(0, 8) + '...';
+                            }
 
-                                if (data.type === 'token') {
-                                    removeTypingIndicator();
-                                    addMessage('bot', data.token, true);
-                                }
+                            if (data.type === 'token') {
+                                removeTypingIndicator();
+                                addMessage('bot', data.token, true);
+                            }
 
-                                if (data.type === 'complete') {
-                                    isStreaming = false;
-                                    removeTypingIndicator();
-                                }
+                            if (data.type === 'complete') {
+                                isStreaming = false;
+                                removeTypingIndicator();
+                            }
 
-                                if (data.type === 'error') {
-                                    isStreaming = false;
-                                    addMessage('bot', '❌ ' + (data.message || 'Unknown error'), false);
-                                }
-                            } catch (e) {}
-                        }
+                            if (data.type === 'error') {
+                                isStreaming = false;
+                                removeTypingIndicator();
+                                addMessage('bot', '❌ ' + (data.message || 'Unknown error'));
+                            }
+                        } catch (_) { /* malformed line — skip */ }
                     }
                 }
             } catch (err) {
-                console.error(err);
-                addMessage('bot', '❌ Failed to get response from AI', false);
+                const hint = isMixedContent(BASE_URL)
+                    ? ' (Mixed content blocked — switch API URL to HTTPS)'
+                    : '';
+                addMessage('bot', `❌ Failed to get response from AI: ${err.message}${hint}`);
             } finally {
                 isStreaming = false;
                 removeTypingIndicator();
             }
         }
 
-        // End Current Session
+        // ── End Session ───────────────────────────────────────────────────
         async function endCurrentSession() {
-            if (!customerId || !sessionId || !apiKey) {
-                alert('No active session to end');
-                return;
-            }
-
+            if (!customerId || !sessionId || !apiKey) { alert('No active session to end'); return; }
             if (!confirm('End current session?')) return;
 
             try {
-                const res = await fetch(`${BASE_URL}/api/customers/${customerId}/session-completed/${sessionId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
-                    }
-                });
-
+                const res = await fetch(
+                    `${BASE_URL}/api/customers/${customerId}/session-completed/${sessionId}`,
+                    { method: 'PUT', headers: apiHeaders() }
+                );
                 const json = await res.json();
 
                 if (json.success || json.status === true) {
-                    addMessage('bot', '✅ Session completed successfully.', false);
+                    addMessage('bot', '✅ Session completed successfully.');
                     sessionId = null;
                     saveToStorage();
                     document.getElementById('displaySessionId').textContent = 'new';
                 } else {
-                    alert('Failed to end session');
+                    alert('Failed to end session: ' + (json.message || JSON.stringify(json)));
                 }
             } catch (err) {
                 alert('Error ending session: ' + err.message);
             }
         }
 
-        function newChat() {
+        // ── New Chat ──────────────────────────────────────────────────────
+        async function newChat() {
             if (sessionId) {
-                endCurrentSession().then(() => {
-                    sessionId = null;
-                    saveToStorage();
-                    document.getElementById('messages').innerHTML = '';
-                    addMessage('bot', '🆕 New chat started.', false);
-                });
-            } else {
-                document.getElementById('messages').innerHTML = '';
-                addMessage('bot', '🆕 New chat started.', false);
+                await endCurrentSession();
             }
+            sessionId = null;
+            saveToStorage();
+            document.getElementById('messages').innerHTML = '';
+            addMessage('bot', '🆕 New chat started.');
         }
 
+        // ── Reset All ─────────────────────────────────────────────────────
         function resetAll() {
             if (confirm('Clear all data and start fresh?')) {
                 clearStorage();
                 document.getElementById('messages').innerHTML = '';
                 showCustomerForm();
+                document.getElementById('mixedContentBanner').classList.remove('show');
             }
         }
 
-        // Initialize
+        // ── Init ──────────────────────────────────────────────────────────
         window.onload = function () {
-            checkProtocol(); // ← check if running from file://
-
+            checkProtocol();     // file:// warning
             loadFromStorage();
 
-            const baseInput = document.getElementById('baseUrl');
-            baseInput.addEventListener('change', () => BASE_URL = baseInput.value.trim());
+            const urlInput = document.getElementById('baseUrlInput');
 
-            document.getElementById('customerForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                createCustomer();
+            // Restore BASE_URL from sessionStorage if saved
+            const savedUrl = sessionStorage.getItem('test_baseUrl');
+            if (savedUrl) { BASE_URL = savedUrl; urlInput.value = savedUrl; }
+
+            updateProtocolBadge(BASE_URL);
+
+            urlInput.addEventListener('input', () => {
+                BASE_URL = urlInput.value.trim();
+                sessionStorage.setItem('test_baseUrl', BASE_URL);
+                updateProtocolBadge(BASE_URL);
             });
 
-            document.getElementById('chatForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                sendMessage();
-            });
+            // Show mixed content overlay only on page load if issue detected
+            checkMixedContent();
 
             if (apiKey && customerId) {
                 showChatPanel();
-                addMessage('bot', '👋 Welcome back! Previous session loaded.', false);
+                addMessage('bot', '👋 Welcome back! Previous session loaded.');
             } else {
                 showCustomerForm();
             }
